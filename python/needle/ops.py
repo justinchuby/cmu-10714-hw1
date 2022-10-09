@@ -1,14 +1,14 @@
 """Operator implementations."""
 
 from numbers import Number
-from typing import Optional, List
-from .autograd import NDArray
-from .autograd import Op, Tensor, Value, TensorOp
-from .autograd import TensorTuple, TensorTupleOp
+from typing import List, Optional
 
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
 import numpy as array_api
+from beartype import beartype
+
+from .autograd import NDArray, Op, Tensor, TensorOp, TensorTuple, TensorTupleOp, Value
 
 
 class EWiseAdd(TensorOp):
@@ -73,7 +73,7 @@ class PowerScalar(TensorOp):
         self.scalar = scalar
 
     def compute(self, a: NDArray) -> NDArray:
-        return a ** self.scalar
+        return a**self.scalar
 
     def gradient(self, out_grad, node):
         # adjunct
@@ -117,11 +117,16 @@ def divide_scalar(a, scalar):
 
 
 class Transpose(TensorOp):
-    def __init__(self, axes: Optional[tuple] = None):
+    @beartype
+    def __init__(self, axes: Optional[tuple[int, int]] = None):
         self.axes = axes
 
     def compute(self, a):
-        return array_api.transpose(a, axes=self.axes)
+        if self.axes is None:
+            axes = (-1, -2)
+        else:
+            axes = self.axes
+        return array_api.swapaxes(a, *axes)
 
     def gradient(self, out_grad, node):
         ### BEGIN YOUR SOLUTION
