@@ -1,4 +1,5 @@
 """Core data structures."""
+import abc
 import needle
 from typing import List, Optional, NamedTuple, Tuple, Union
 from collections import namedtuple
@@ -45,12 +46,14 @@ def all_devices():
     return [cpu()]
 
 
-class Op:
+class Op(abc.ABC):
     """Operator definition."""
 
+    @abc.abstractmethod
     def __call__(self, *args):
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def compute(self, *args: Tuple[NDArray]):
         """Calculate forward pass of operator.
 
@@ -67,6 +70,7 @@ class Op:
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
     def gradient(
         self, out_grad: "Value", node: "Value"
     ) -> Union["Value", Tuple["Value"]]:
@@ -88,7 +92,7 @@ class Op:
         """
         raise NotImplementedError()
 
-    def gradient_as_tuple(self, out_grad: "Value", node: "Value") -> Tuple["Value"]:
+    def gradient_as_tuple(self, out_grad: "Value", node: "Value") -> Tuple["Value", ...]:
         """Convenience method to always return a tuple from gradient call"""
         output = self.gradient(out_grad, node)
         if isinstance(output, tuple):
