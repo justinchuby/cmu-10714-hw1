@@ -130,7 +130,7 @@ class Value:
     cached_data: NDArray
     requires_grad: bool
 
-    def realize_cached_data(self):
+    def realize_cached_data(self) -> NDArray:
         """Run compute to realize the cached data."""
 
         # NOTE: This looks like a lazy tensor

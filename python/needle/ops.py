@@ -101,7 +101,7 @@ class EWiseDiv(TensorOp):
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         lhs, rhs = node.inputs
-        return (out_grad / rhs, out_grad @ negate(lhs) * power_scalar(rhs, -2))
+        return (out_grad / rhs, out_grad * negate(lhs) * power_scalar(rhs, -2))
 
 
 def divide(a, b):
@@ -135,7 +135,8 @@ class Transpose(TensorOp):
         return transpose(out_grad, self.axes)
 
 
-def transpose(a, axes=None):
+@beartype
+def transpose(a, axes: tuple[int, int] = (-1, -2)):
     return Transpose(axes)(a)
 
 
@@ -164,9 +165,10 @@ class BroadcastTo(TensorOp):
         return array_api.broadcast_to(a, self.shape)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        # TODO: Think about this
+        # Sum over the broadcasted axes and divide by the product of the new dimensions
+        # How do I know which axes are new?
         raise NotImplementedError()
-        ### END YOUR SOLUTION
+
 
 
 def broadcast_to(a, shape):
@@ -174,7 +176,7 @@ def broadcast_to(a, shape):
 
 
 class Summation(TensorOp):
-    def __init__(self, axes: Optional[tuple] = None):
+    def __init__(self, axes: tuple | None = None):
         self.axes = axes
 
     def compute(self, a):
@@ -192,12 +194,12 @@ def summation(a, axes=None):
 
 class MatMul(TensorOp):
     def compute(self, a, b):
-        return array_api.matmul(a, b)
+        return a @ b
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         # NOTE: Since by gradient we mean partial derivative...
         lhs, rhs = node.inputs
-        return (out_grad @ transpose(lhs), out_grad @ transpose(rhs))
+        return (out_grad @ transpose(rhs), transpose(lhs) @ out_grad)
 
 
 def matmul(a, b):
@@ -245,6 +247,7 @@ class ReLU(TensorOp):
         return array_api.maximum(a, 0)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
+        # FIXME: Correct this
         return relu(node.inputs[0])
 
 
