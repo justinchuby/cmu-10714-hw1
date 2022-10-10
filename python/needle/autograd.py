@@ -132,7 +132,10 @@ class Value:
     requires_grad: bool
 
     def realize_cached_data(self):
-        """Run compute to realize the cached data"""
+        """Run compute to realize the cached data."""
+
+        # NOTE: This looks like a lazy tensor
+
         # avoid recomputation
         if self.cached_data is not None:
             return self.cached_data
@@ -268,6 +271,7 @@ class Tensor(Value):
 
     @staticmethod
     def make_from_op(op: Op, inputs: list[Value]):
+        # TODO: Change this to a class method?
         tensor = Tensor.__new__(Tensor)
         tensor._init(op, inputs)
         if not LAZY_MODE:
