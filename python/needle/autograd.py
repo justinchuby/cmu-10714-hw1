@@ -1,9 +1,14 @@
 """Core data structures."""
+from __future__ import annotations
+
 import abc
-import needle
-from typing import List, Optional, NamedTuple, Tuple, Union
 from collections import namedtuple
+from typing import List, NamedTuple, Optional, Tuple, Union
+
 import numpy
+from beartype import beartype
+
+import needle
 
 # needle version
 LAZY_MODE = False
@@ -54,7 +59,7 @@ class Op(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def compute(self, *args: Tuple[NDArray]):
+    def compute(self, *args: tuple[NDArray]):
         """Calculate forward pass of operator.
 
         Parameters
@@ -71,9 +76,7 @@ class Op(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def gradient(
-        self, out_grad: "Value", node: "Value"
-    ) -> Union["Value", Tuple["Value"]]:
+    def gradient(self, out_grad: Value, node: Value) -> Union[Value, tuple[Value]]:
         """Compute partial adjoint for each input value for a given output adjoint.
 
         Parameters
@@ -92,7 +95,7 @@ class Op(abc.ABC):
         """
         raise NotImplementedError()
 
-    def gradient_as_tuple(self, out_grad: "Value", node: "Value") -> Tuple["Value", ...]:
+    def gradient_as_tuple(self, out_grad: Value, node: Value) -> tuple[Value, ...]:
         """Convenience method to always return a tuple from gradient call"""
         output = self.gradient(out_grad, node)
         if isinstance(output, tuple):
@@ -121,8 +124,8 @@ class Value:
     """A value in the computational graph."""
 
     # trace of computational graph
-    op: Optional[Op]
-    inputs: List["Value"]
+    op: Op | None
+    inputs: list[Value]
     # The following fields are cached fields for
     # dynamic computation
     cached_data: NDArray
@@ -149,12 +152,12 @@ class Value:
 
     def _init(
         self,
-        op: Optional[Op],
-        inputs: List["Tensor"],
+        op: Op | None,
+        inputs: list[Tensor],
         *,
         num_outputs: int = 1,
-        cached_data: List[object] = None,
-        requires_grad: Optional[bool] = None
+        cached_data: list[object] | None = None,
+        requires_grad: bool | None = None,
     ):
         global TENSOR_COUNTER
         TENSOR_COUNTER += 1
@@ -178,7 +181,7 @@ class Value:
         return value
 
     @classmethod
-    def make_from_op(cls, op: Op, inputs: List["Value"]):
+    def make_from_op(cls, op: Op, inputs: list[Value]):
         value = cls.__new__(cls)
         value._init(op, inputs)
 
@@ -223,16 +226,16 @@ class TensorTuple(Value):
 
 
 class Tensor(Value):
-    grad: "Tensor"
+    grad: Tensor
 
     def __init__(
         self,
         array,
         *,
-        device: Optional[Device] = None,
+        device: Device | None = None,
         dtype=None,
         requires_grad=True,
-        **kwargs
+        **kwargs,
     ):
         if isinstance(array, Tensor):
             if device is None:
@@ -264,7 +267,7 @@ class Tensor(Value):
         return array_api.array(numpy_array, device=device, dtype=dtype)
 
     @staticmethod
-    def make_from_op(op: Op, inputs: List["Value"]):
+    def make_from_op(op: Op, inputs: list[Value]):
         tensor = Tensor.__new__(Tensor)
         tensor._init(op, inputs)
         if not LAZY_MODE:
@@ -289,9 +292,10 @@ class Tensor(Value):
         return self.detach()
 
     @data.setter
-    def data(self, value):
+    @beartype
+    def data(self, value: Tensor):
         assert isinstance(value, Tensor)
-        assert value.dtype == self.dtype, "%s %s" % (
+        assert value.dtype == self.dtype, "{} {}".format(
             value.dtype,
             self.dtype,
         )
@@ -396,7 +400,7 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     Store the computed result in the grad field of each Variable.
     """
     # a map from node to a list of gradient contributions from each output node
-    node_to_output_grads_list: Dict[Tensor, List[Tensor]] = {}
+    node_to_output_grads_list: dict[Tensor, list[Tensor]] = {}
     # Special note on initializing gradient of
     # We are really taking a derivative of the scalar reduce_sum(output_node)
     # instead of the vector output_node. But this is the common case for loss function.
@@ -410,7 +414,7 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     ### END YOUR SOLUTION
 
 
-def find_topo_sort(node_list: List[Value]) -> List[Value]:
+def find_topo_sort(node_list: list[Value]) -> list[Value]:
     """Given a list of nodes, return a topological sort list of nodes ending in them.
 
     A simple algorithm is to do a post-order DFS traversal on the given nodes,
@@ -437,7 +441,7 @@ def topo_sort_dfs(node, visited, topo_order):
 
 def sum_node_list(node_list):
     """Custom sum function in order to avoid create redundant nodes in Python sum implementation."""
-    from operator import add
     from functools import reduce
+    from operator import add
 
     return reduce(add, node_list)
