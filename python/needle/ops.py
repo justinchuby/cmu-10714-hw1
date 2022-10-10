@@ -8,7 +8,6 @@ Interesting topics to take note:
 """
 
 from numbers import Number
-from typing import List, Optional
 
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
@@ -222,9 +221,7 @@ class Log(TensorOp):
         return array_api.log(a)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        return out_grad / node.inputs[0]
 
 
 def log(a):
@@ -236,9 +233,7 @@ class Exp(TensorOp):
         return array_api.exp(a)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        return out_grad * exp(node.inputs[0])
 
 
 def exp(a):
@@ -250,9 +245,7 @@ class ReLU(TensorOp):
         return array_api.maximum(a, 0)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        ### BEGIN YOUR SOLUTION
-        raise NotImplementedError()
-        ### END YOUR SOLUTION
+        return relu(node.inputs[0])
 
 
 def relu(a):

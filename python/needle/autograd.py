@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import abc
 from collections import namedtuple
-from typing import List, NamedTuple, Optional, Tuple, Union
 
 import numpy
 from beartype import beartype
@@ -76,7 +75,7 @@ class Op(abc.ABC):
         raise NotImplementedError()
 
     @abc.abstractmethod
-    def gradient(self, out_grad: Value, node: Value) -> Union[Value, tuple[Value]]:
+    def gradient(self, out_grad: Value, node: Value) -> Value | tuple[Value]:
         """Compute partial adjoint for each input value for a given output adjoint.
 
         Parameters
