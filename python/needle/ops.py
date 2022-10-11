@@ -179,7 +179,6 @@ class BroadcastTo(TensorOp):
         ):
             if input_dim == broadcasted_dim:
                 continue
-            assert broadcasted_dim != 1
             assert input_dim == 1 or input_dim == -1
             reduce_axes.append(axis)
         # Need to reshape to maintain dim=1 axes
