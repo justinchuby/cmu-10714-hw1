@@ -12,6 +12,7 @@ from numbers import Number
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
 import numpy as array_api
+import numpy as np
 from beartype import beartype
 
 from .autograd import NDArray, Op, Tensor, TensorOp, TensorTuple, TensorTupleOp, Value
@@ -170,7 +171,6 @@ class BroadcastTo(TensorOp):
         raise NotImplementedError()
 
 
-
 def broadcast_to(a, shape):
     return BroadcastTo(shape)(a)
 
@@ -199,7 +199,28 @@ class MatMul(TensorOp):
     def gradient(self, out_grad: Tensor, node: Tensor):
         # NOTE: Since by gradient we mean partial derivative...
         lhs, rhs = node.inputs
-        return (out_grad @ transpose(rhs), transpose(lhs) @ out_grad)
+        # Determine if anything is broadcasted. If so sum over the broadcasted
+        # axes to get the gradient
+        lhs_shape = lhs.realize_cached_data().shape
+        rhs_shape = rhs.realize_cached_data().shape
+
+        if len(lhs_shape) == len(rhs_shape):
+            # No broadcasting
+            return (out_grad @ transpose(rhs), transpose(lhs) @ out_grad)
+        if len(lhs_shape) < len(rhs_shape):
+            # Left hand side is broadcasted
+            reduce_axes = tuple(range(len(rhs_shape) - len(lhs_shape)))
+            return (
+                summation(out_grad @ transpose(rhs), axes=reduce_axes),
+                transpose(lhs) @ out_grad,
+            )
+
+        # Right hand side is broadcasted
+        reduce_axes = tuple(range(len(lhs_shape) - len(rhs_shape)))
+        return (
+            out_grad @ transpose(rhs),
+            summation(transpose(lhs) @ out_grad, axes=reduce_axes),
+        )
 
 
 def matmul(a, b):
