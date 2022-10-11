@@ -228,6 +228,7 @@ class TensorTuple(Value):
 
 
 class Tensor(Value):
+    inputs: list[Tensor]
     grad: Tensor
 
     def __init__(

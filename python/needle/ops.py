@@ -8,12 +8,14 @@ Interesting topics to take note:
 """
 
 from numbers import Number
+import itertools
 
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
 import numpy as array_api
 import numpy as np
 from beartype import beartype
+
 
 from .autograd import NDArray, Op, Tensor, TensorOp, TensorTuple, TensorTupleOp, Value
 
@@ -150,7 +152,7 @@ class Reshape(TensorOp):
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         # Reshape into the input shape
-        input_shape = node.inputs[0].realize_cached_data().shape
+        input_shape = node.inputs[0].shape
         return reshape(out_grad, input_shape)
 
 
@@ -167,8 +169,21 @@ class BroadcastTo(TensorOp):
 
     def gradient(self, out_grad: Tensor, node: Tensor):
         # Sum over the broadcasted axes and divide by the product of the new dimensions
-        # How do I know which axes are new?
-        raise NotImplementedError()
+        input_shape = node.inputs[0].shape
+        reduce_axes = []
+        for input_dim, broadcasted_dim, axis in itertools.zip_longest(
+            reversed(input_shape),
+            reversed(self.shape),
+            reversed(range(len(self.shape))),
+            fillvalue=-1,
+        ):
+            if input_dim == broadcasted_dim:
+                continue
+            assert broadcasted_dim != 1
+            assert input_dim == 1 or input_dim == -1
+            reduce_axes.append(axis)
+        # Need to reshape to maintain dim=1 axes
+        return reshape(summation(out_grad, tuple(reduce_axes)), input_shape)
 
 
 def broadcast_to(a, shape):
@@ -201,8 +216,8 @@ class MatMul(TensorOp):
         lhs, rhs = node.inputs
         # Determine if anything is broadcasted. If so sum over the broadcasted
         # axes to get the gradient
-        lhs_shape = lhs.realize_cached_data().shape
-        rhs_shape = rhs.realize_cached_data().shape
+        lhs_shape = lhs.shape
+        rhs_shape = rhs.shape
 
         if len(lhs_shape) == len(rhs_shape):
             # No broadcasting
