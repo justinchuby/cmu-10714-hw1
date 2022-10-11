@@ -197,13 +197,17 @@ class Summation(TensorOp):
         return array_api.sum(a, axis=self.axes)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        if self.axes is None or self.axes == tuple():
+        if self.axes == tuple():
             return out_grad
         input_shape = node.inputs[0].shape
-        reduced_axes = set(self.axes)
+        if self.axes is None:
+            reduced_axes = set(range(len(input_shape)))
+        else:
+            reduced_axes = set(self.axes)
         restored_shape = []
         for i, size in enumerate(input_shape):
-            if i in reduced_axes:
+            # Support negative indexing
+            if i in reduced_axes or i - len(input_shape) in reduced_axes:
                 restored_shape.append(1)
             else:
                 restored_shape.append(size)
