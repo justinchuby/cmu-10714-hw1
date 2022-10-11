@@ -426,9 +426,10 @@ def find_topo_sort(node_list: list[Value]) -> list[Value]:
     after all its predecessors are traversed due to post-order DFS, we get a topological
     sort.
     """
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    sorted_nodes = []
+    visited = set()
+    return topo_sort_dfs()
+    # TODO: Here
 
 
 def topo_sort_dfs(node, visited, topo_order):
