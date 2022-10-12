@@ -2,8 +2,6 @@
 from __future__ import annotations
 
 import abc
-from collections import namedtuple
-from typing import List, Set
 
 import numpy
 from beartype import beartype
