@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import abc
-from collections import namedtuple
 
 import numpy
 from beartype import beartype
@@ -426,16 +425,22 @@ def find_topo_sort(node_list: list[Value]) -> list[Value]:
     after all its predecessors are traversed due to post-order DFS, we get a topological
     sort.
     """
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    visited: set[Value] = set()
+    topo_order: list[Value] = []
+    for node in node_list:
+        topo_sort_dfs(node, visited, topo_order)
+    return topo_order
 
 
-def topo_sort_dfs(node, visited, topo_order):
+def topo_sort_dfs(node: Value, visited: set[Value], topo_order: list[Value]):
     """Post-order DFS"""
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    if node in visited:
+        return
+    # A leaf will have no inputs
+    for input_ in node.inputs:
+        topo_sort_dfs(input_, visited, topo_order)
+    topo_order.append(node)
+    visited.add(node)
 
 
 ##############################
