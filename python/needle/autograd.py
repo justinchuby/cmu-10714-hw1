@@ -401,12 +401,16 @@ class Tensor(Value):
     __rmatmul__ = __matmul__
 
 
-def compute_gradient_of_variables(output_tensor, out_grad):
+def compute_gradient_of_variables(output_tensor, out_grad) -> None:
     """Take gradient of output node with respect to each node in node_list.
 
     Store the computed result in the grad field of each Variable.
+
+    This function propagates the gradient to *every* tensor because backward is
+    only called once in the output tensor.
     """
     # a map from node to a list of gradient contributions from each output node
+    # Each list of nodes contributes to the gradient of the tensor
     node_to_output_grads_list: dict[Tensor, list[Tensor]] = {}
     # Special note on initializing gradient of
     # We are really taking a derivative of the scalar reduce_sum(output_node)
@@ -423,7 +427,7 @@ def compute_gradient_of_variables(output_tensor, out_grad):
         for k in node.inputs:
             node_to_output_grads_list[k].append(k.op.gradient(v_i_adjoint))
 
-    return v_input
+    # TODO: How should I update the grad field of each node?
 
 
 def find_topo_sort(node_list: list[Value]) -> list[Value]:
