@@ -2,6 +2,10 @@
 from __future__ import annotations
 
 import abc
+import functools
+import itertools
+import operator
+import typing
 
 import numpy
 from beartype import beartype
@@ -410,11 +414,16 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     node_to_output_grads_list[output_tensor] = [out_grad]
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
-    reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
+    reverse_topo_order = typing.cast(
+        list[Tensor], reversed(find_topo_sort([output_tensor]))
+    )
 
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    for node in reverse_topo_order:
+        v_i_adjoint = functools.reduce(operator.add, node_to_output_grads_list[node])
+        for k in node.inputs:
+            node_to_output_grads_list[k].append(k.op.gradient(v_i_adjoint))
+
+    return v_input
 
 
 def find_topo_sort(node_list: list[Value]) -> list[Value]:
