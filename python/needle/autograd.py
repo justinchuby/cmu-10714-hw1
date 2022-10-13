@@ -423,11 +423,11 @@ def compute_gradient_of_variables(output_tensor, out_grad) -> None:
     )
 
     for node in reverse_topo_order:
-        v_i_adjoint = functools.reduce(operator.add, node_to_output_grads_list[node])
+        v_i_adjoint = sum_node_list(node_to_output_grads_list[node])
+        node.grad = v_i_adjoint
         for k in node.inputs:
-            node_to_output_grads_list[k].append(k.op.gradient(v_i_adjoint))
-
-    # TODO: How should I update the grad field of each node?
+            # TODO: Understand this
+            node_to_output_grads_list[k].extend(k.op.gradient_as_tuple(v_i_adjoint, k))
 
 
 def find_topo_sort(node_list: list[Value]) -> list[Value]:
@@ -463,7 +463,5 @@ def topo_sort_dfs(node: Value, visited: set[Value], topo_order: list[Value]):
 
 def sum_node_list(node_list):
     """Custom sum function in order to avoid create redundant nodes in Python sum implementation."""
-    from functools import reduce
-    from operator import add
 
-    return reduce(add, node_list)
+    return functools.reduce(operator.add, node_list)

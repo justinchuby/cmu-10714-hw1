@@ -299,7 +299,7 @@ class ReLU(TensorOp):
         multiplier = relu_data
         multiplier[multiplier > 0] = 1
         # TODO: Still, how to I keep the graph updated?
-        return node.inputs[0] * Tensor.make_const(multiplier)
+        return out_grad * node.inputs[0] * Tensor.make_const(multiplier)
 
 
 def relu(a):
