@@ -3,7 +3,7 @@ import struct
 import sys
 
 import numpy as np
-import numpy_typing as npt
+import numpy.typing as npt
 
 import beartype
 

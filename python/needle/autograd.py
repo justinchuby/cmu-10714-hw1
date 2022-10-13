@@ -427,7 +427,9 @@ def compute_gradient_of_variables(output_tensor, out_grad) -> None:
         node.grad = v_i_adjoint
         for k in node.inputs:
             # TODO: Understand this
-            node_to_output_grads_list[k].extend(k.op.gradient_as_tuple(v_i_adjoint, k))
+            node_to_output_grads_list.setdefault(k, []).extend(
+                k.op.gradient_as_tuple(v_i_adjoint, k)
+            )
 
 
 def find_topo_sort(node_list: list[Value]) -> list[Value]:
