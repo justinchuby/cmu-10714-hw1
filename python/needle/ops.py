@@ -294,8 +294,12 @@ class ReLU(TensorOp):
         return array_api.maximum(a, 0)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        # FIXME: Correct this
-        return relu(node.inputs[0])
+        input_data = node.inputs[0].realize_cached_data()
+        relu_data = array_api.maximum(input_data, 0)
+        multiplier = relu_data
+        multiplier[multiplier > 0] = 1
+        # TODO: Still, how to I keep the graph updated?
+        return node.inputs[0] * Tensor.make_const(multiplier)
 
 
 def relu(a):
