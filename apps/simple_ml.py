@@ -77,8 +77,30 @@ def softmax_loss(Z: ndl.Tensor, y_one_hot: ndl.Tensor) -> ndl.Tensor:
     return ndl.summation(loss) / np.prod(loss.shape)
 
 
+class Model:
+    def __init__(self, W1: ndl.Tensor, W2: ndl.Tensor):
+        self.W1 = W1
+        self.W2 = W2
 
-def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
+    def forward(self, X: ndl.Tensor):
+        Z1 = ndl.relu(X @ self.W1)
+        return Z1 @ self.W2
+
+
+def _onehot(y: np.ndarray, prediction: np.ndarray) -> np.ndarray:
+    y_onehot = np.zeros_like(prediction)
+    y_onehot[np.arange(y.shape[0]), y] = 1
+    return y_onehot
+
+
+def nn_epoch(
+    X: np.ndarray,
+    y: np.ndarray,
+    W1: ndl.Tensor,
+    W2: ndl.Tensor,
+    lr: float = 0.1,
+    batch: int = 100,
+):
     """Run a single epoch of SGD for a two-layer neural network defined by the
     weights W1 and W2 (with no bias terms):
         logits = ReLU(X * W1) * W1
@@ -102,9 +124,15 @@ def nn_epoch(X, y, W1, W2, lr=0.1, batch=100):
             W2: ndl.Tensor[np.float32]
     """
 
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    model = Model(W1, W2)
+
+    for i in range(X.shape[0] // batch):
+        start = i * batch
+        end = start + batch
+        logits = model.forward(ndl.Tensor.make_const(X[start:end]))
+        I_y = (ndl.Tensor.make_const, _onehot(y[start:end], logits))
+        gradient = softmax_loss(logits, I_y)
+        gradient.backward()
 
 
 ### CODE BELOW IS FOR ILLUSTRATION, YOU DO NOT NEED TO EDIT
