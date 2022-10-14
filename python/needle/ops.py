@@ -7,25 +7,21 @@ Interesting topics to take note:
 3. Slicing
 """
 
-from numbers import Number
 import itertools
+from numbers import Number
 
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
 import numpy as array_api
-import numpy as np
 from beartype import beartype
-
 
 from .autograd import NDArray, Op, Tensor, TensorOp, TensorTuple, TensorTupleOp, Value
 
 
 class EWiseAdd(TensorOp):
-    @beartype
     def compute(self, a: NDArray, b: NDArray):
         return a + b
 
-    @beartype
     def gradient(self, out_grad: Tensor, node: Tensor):
         return out_grad, out_grad
 
@@ -42,7 +38,6 @@ class AddScalar(TensorOp):
         return a + self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        # FIXME: Should this be a tuple instead?
         return out_grad
 
 
@@ -85,7 +80,6 @@ class PowerScalar(TensorOp):
         self.scalar = scalar
 
     def compute(self, a: NDArray) -> NDArray:
-        # TODO: Why is a an NDArray and out_grad a Tensor?
         return a**self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):
@@ -294,8 +288,13 @@ class ReLU(TensorOp):
         return array_api.maximum(a, 0)
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        # FIXME: Correct this
-        return relu(node.inputs[0])
+        input_data = node.inputs[0].realize_cached_data()
+        relu_data = array_api.maximum(input_data, 0)
+        multiplier = relu_data
+        multiplier[multiplier > 0] = 1
+
+        # TODO: Still, how to I keep the graph updated?
+        return out_grad * Tensor(multiplier)
 
 
 def relu(a):

@@ -1,3 +1,3 @@
-from .autograd import Tensor, cpu, all_devices
 from . import ops
+from .autograd import Tensor, all_devices, cpu
 from .ops import *

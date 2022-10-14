@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import abc
-
-import numpy
-from beartype import beartype
+import functools
+import itertools
+import operator
+import typing
 
 import needle
+import numpy
+from beartype import beartype
 
 # needle version
 LAZY_MODE = False
@@ -397,12 +400,16 @@ class Tensor(Value):
     __rmatmul__ = __matmul__
 
 
-def compute_gradient_of_variables(output_tensor, out_grad):
+def compute_gradient_of_variables(output_tensor: Tensor, out_grad: Tensor) -> None:
     """Take gradient of output node with respect to each node in node_list.
 
     Store the computed result in the grad field of each Variable.
+
+    This function propagates the gradient to *every* tensor because backward is
+    only called once in the output tensor.
     """
     # a map from node to a list of gradient contributions from each output node
+    # Each list of nodes contributes to the gradient of the tensor
     node_to_output_grads_list: dict[Tensor, list[Tensor]] = {}
     # Special note on initializing gradient of
     # We are really taking a derivative of the scalar reduce_sum(output_node)
@@ -410,11 +417,21 @@ def compute_gradient_of_variables(output_tensor, out_grad):
     node_to_output_grads_list[output_tensor] = [out_grad]
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
-    reverse_topo_order = list(reversed(find_topo_sort([output_tensor])))
+    reverse_topo_order = typing.cast(
+        list[Tensor], list(reversed(find_topo_sort([output_tensor])))
+    )
 
-    ### BEGIN YOUR SOLUTION
-    raise NotImplementedError()
-    ### END YOUR SOLUTION
+    # TODO: Document this
+    for node in reverse_topo_order:
+        v_i_adjoint = sum_node_list(node_to_output_grads_list[node])
+        node.grad = v_i_adjoint
+
+        if node.is_leaf():
+            continue
+
+        gradients = node.op.gradient_as_tuple(v_i_adjoint, node)
+        for k, gradient_k in zip(node.inputs, gradients):
+            node_to_output_grads_list.setdefault(k, []).append(gradient_k)
 
 
 def find_topo_sort(node_list: list[Value]) -> list[Value]:
@@ -450,7 +467,5 @@ def topo_sort_dfs(node: Value, visited: set[Value], topo_order: list[Value]):
 
 def sum_node_list(node_list):
     """Custom sum function in order to avoid create redundant nodes in Python sum implementation."""
-    from functools import reduce
-    from operator import add
 
-    return reduce(add, node_list)
+    return functools.reduce(operator.add, node_list)
