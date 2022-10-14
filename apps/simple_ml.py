@@ -87,10 +87,16 @@ class Model:
         return Z1 @ self.W2
 
     def apply_grad(self, lr: float):
-        self.W1 -= self.W1.grad * lr
-        self.W2 -= self.W2.grad * lr
+        # NOTE: Make sure data is correct
+        self.W1.data = ndl.Tensor(
+            (self.W1 - self.W1.grad * lr).numpy().astype(np.float32)
+        )
+        self.W2.data = ndl.Tensor(
+            (self.W2 - self.W2.grad * lr).numpy().astype(np.float32)
+        )
 
 
+@beartype.beartype
 def _onehot(y: np.ndarray, prediction: np.ndarray) -> np.ndarray:
     y_onehot = np.zeros_like(prediction)
     y_onehot[np.arange(y.shape[0]), y] = 1.0
@@ -105,7 +111,7 @@ def nn_epoch(
     W2: ndl.Tensor,
     lr: float = 0.1,
     batch: int = 100,
-):
+) -> tuple[ndl.Tensor, ndl.Tensor]:
     """Run a single epoch of SGD for a two-layer neural network defined by the
     weights W1 and W2 (with no bias terms):
         logits = ReLU(X * W1) * W1
@@ -135,9 +141,14 @@ def nn_epoch(
         start = i * batch
         end = start + batch
         logits = model.forward(ndl.Tensor(X[start:end]))
-        I_y = ndl.Tensor(_onehot(y[start:end], logits))
+        # NOTE: logics needs to be numpy in _onthot
+        I_y = ndl.Tensor(_onehot(y[start:end], logits.numpy()))
         gradient = softmax_loss(logits, I_y)
         gradient.backward()
+        # NOTE: Be sure to update the weights
+        model.apply_grad(lr)
+
+    return W1, W2
 
 
 ### CODE BELOW IS FOR ILLUSTRATION, YOU DO NOT NEED TO EDIT

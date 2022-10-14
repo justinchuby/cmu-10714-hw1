@@ -7,9 +7,7 @@ Interesting topics to take note:
 3. Slicing
 """
 
-import functools
 import itertools
-import operator
 from numbers import Number
 
 # NOTE: we will import numpy as the array_api
@@ -295,8 +293,9 @@ class ReLU(TensorOp):
         relu_data = array_api.maximum(input_data, 0)
         multiplier = relu_data
         multiplier[multiplier > 0] = 1
+
         # TODO: Still, how to I keep the graph updated?
-        return out_grad * node.inputs[0] * Tensor.make_const(multiplier)
+        return out_grad * Tensor(multiplier)
 
 
 def relu(a):
