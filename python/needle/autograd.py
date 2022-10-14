@@ -7,10 +7,9 @@ import itertools
 import operator
 import typing
 
+import needle
 import numpy
 from beartype import beartype
-
-import needle
 
 # needle version
 LAZY_MODE = False
@@ -401,7 +400,7 @@ class Tensor(Value):
     __rmatmul__ = __matmul__
 
 
-def compute_gradient_of_variables(output_tensor, out_grad) -> None:
+def compute_gradient_of_variables(output_tensor: Tensor, out_grad: Tensor) -> None:
     """Take gradient of output node with respect to each node in node_list.
 
     Store the computed result in the grad field of each Variable.
@@ -419,17 +418,20 @@ def compute_gradient_of_variables(output_tensor, out_grad) -> None:
 
     # Traverse graph in reverse topological order given the output_node that we are taking gradient wrt.
     reverse_topo_order = typing.cast(
-        list[Tensor], reversed(find_topo_sort([output_tensor]))
+        list[Tensor], list(reversed(find_topo_sort([output_tensor])))
     )
 
+    # TODO: Document this
     for node in reverse_topo_order:
         v_i_adjoint = sum_node_list(node_to_output_grads_list[node])
         node.grad = v_i_adjoint
-        for k in node.inputs:
-            # TODO: Understand this
-            node_to_output_grads_list.setdefault(k, []).extend(
-                k.op.gradient_as_tuple(v_i_adjoint, k)
-            )
+
+        if node.is_leaf():
+            continue
+
+        gradients = node.op.gradient_as_tuple(v_i_adjoint, node)
+        for k, gradient_k in zip(node.inputs, gradients):
+            node_to_output_grads_list.setdefault(k, []).append(gradient_k)
 
 
 def find_topo_sort(node_list: list[Value]) -> list[Value]:

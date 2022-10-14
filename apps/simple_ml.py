@@ -2,10 +2,9 @@ import gzip
 import struct
 import sys
 
+import beartype
 import numpy as np
 import numpy.typing as npt
-
-import beartype
 
 sys.path.append("python/")
 import needle as ndl
@@ -72,8 +71,9 @@ def softmax_loss(Z: ndl.Tensor, y_one_hot: ndl.Tensor) -> ndl.Tensor:
     """
     # Take exp of the input
     exps = ndl.exp(Z)
-    loss = ndl.log(ndl.summation(exps, axis=1)) - ndl.summation(Z * y_one_hot, axis=1)
-    # TODO: check if this is the right way of getting the shape
+    loss = ndl.log(ndl.summation(exps, axes=(1,))) - ndl.summation(
+        Z * y_one_hot, axes=(1,)
+    )
     return ndl.summation(loss) / np.prod(loss.shape)
 
 
@@ -86,13 +86,18 @@ class Model:
         Z1 = ndl.relu(X @ self.W1)
         return Z1 @ self.W2
 
+    def apply_grad(self, lr: float):
+        self.W1 -= self.W1.grad * lr
+        self.W2 -= self.W2.grad * lr
+
 
 def _onehot(y: np.ndarray, prediction: np.ndarray) -> np.ndarray:
     y_onehot = np.zeros_like(prediction)
-    y_onehot[np.arange(y.shape[0]), y] = 1
+    y_onehot[np.arange(y.shape[0]), y] = 1.0
     return y_onehot
 
 
+@beartype.beartype
 def nn_epoch(
     X: np.ndarray,
     y: np.ndarray,
@@ -129,8 +134,8 @@ def nn_epoch(
     for i in range(X.shape[0] // batch):
         start = i * batch
         end = start + batch
-        logits = model.forward(ndl.Tensor.make_const(X[start:end]))
-        I_y = (ndl.Tensor.make_const, _onehot(y[start:end], logits))
+        logits = model.forward(ndl.Tensor(X[start:end]))
+        I_y = ndl.Tensor(_onehot(y[start:end], logits))
         gradient = softmax_loss(logits, I_y)
         gradient.backward()
 

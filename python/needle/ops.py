@@ -7,25 +7,23 @@ Interesting topics to take note:
 3. Slicing
 """
 
-from numbers import Number
+import functools
 import itertools
+import operator
+from numbers import Number
 
 # NOTE: we will import numpy as the array_api
 # as the backend for our computations, this line will change in later homeworks
 import numpy as array_api
-import numpy as np
 from beartype import beartype
-
 
 from .autograd import NDArray, Op, Tensor, TensorOp, TensorTuple, TensorTupleOp, Value
 
 
 class EWiseAdd(TensorOp):
-    @beartype
     def compute(self, a: NDArray, b: NDArray):
         return a + b
 
-    @beartype
     def gradient(self, out_grad: Tensor, node: Tensor):
         return out_grad, out_grad
 
@@ -85,7 +83,6 @@ class PowerScalar(TensorOp):
         self.scalar = scalar
 
     def compute(self, a: NDArray) -> NDArray:
-        # TODO: Why is a an NDArray and out_grad a Tensor?
         return a**self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):

@@ -2,12 +2,12 @@ import sys
 
 sys.path.append("./python")
 sys.path.append("./apps")
-from simple_ml import *
-import numdifftools as nd
-
-import numpy as np
 import mugrade
 import needle as ndl
+import numdifftools as nd
+import numpy as np
+import pytest
+from simple_ml import *
 
 
 ##############################################################################
@@ -439,6 +439,11 @@ def gradient_check(f, *args, tol=1e-6, backward=False, **kwargs):
         out = f(*args, **kwargs).sum()
         out.backward()
         computed_grads = [a.grad.numpy() for a in args]
+
+    # for i in range(len(args)):
+    #     assert np.allclose(
+    #         computed_grads[i], numerical_grads[i], rtol=1e-3
+    #     ), f"Gradient check failed for argument {i} of {f.__name__}."
     error = sum(
         np.linalg.norm(computed_grads[i] - numerical_grads[i]) for i in range(len(args))
     )
@@ -750,7 +755,21 @@ def submit_topo_sort():
 ### TESTS/SUBMISSION CODE FOR compute_gradient_of_variables
 
 
-def test_compute_gradient():
+@pytest.mark.parametrize(
+    "func",
+    [
+        lambda x: x,
+    ],
+)
+def test_compute_gradient_0(func):
+    gradient_check(
+        func,
+        ndl.Tensor(np.array([[3.0, 3.0], [3.0, 3.0]], dtype=np.float64)),
+        backward=True,
+    )
+
+
+def test_compute_gradient_1():
     gradient_check(
         lambda A, B, C: ndl.summation((A @ B + C) * (A @ B), axes=None),
         ndl.Tensor(np.random.randn(10, 9)),
@@ -758,12 +777,18 @@ def test_compute_gradient():
         ndl.Tensor(np.random.randn(10, 8)),
         backward=True,
     )
+
+
+def test_compute_gradient_2():
     gradient_check(
         lambda A, B: ndl.summation(ndl.broadcast_to(A, shape=(10, 9)) * B, axes=None),
         ndl.Tensor(np.random.randn(10, 1)),
         ndl.Tensor(np.random.randn(10, 9)),
         backward=True,
     )
+
+
+def test_compute_gradient_3():
     gradient_check(
         lambda A, B, C: ndl.summation(
             ndl.reshape(A, shape=(10, 10)) @ B / 5 + C, axes=None
@@ -774,6 +799,8 @@ def test_compute_gradient():
         backward=True,
     )
 
+
+def test_compute_gradient_of_gradient():
     # check gradient of gradient
     x2 = ndl.Tensor([6])
     x3 = ndl.Tensor([0])
