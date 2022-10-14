@@ -38,7 +38,6 @@ class AddScalar(TensorOp):
         return a + self.scalar
 
     def gradient(self, out_grad: Tensor, node: Tensor):
-        # FIXME: Should this be a tuple instead?
         return out_grad
 
 
