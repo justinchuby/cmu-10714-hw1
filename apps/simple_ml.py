@@ -88,12 +88,8 @@ class Model:
 
     def apply_grad(self, lr: float):
         # NOTE: Make sure data is correct
-        self.W1.data = ndl.Tensor(
-            (self.W1 - self.W1.grad * lr).numpy().astype(np.float32)
-        )
-        self.W2.data = ndl.Tensor(
-            (self.W2 - self.W2.grad * lr).numpy().astype(np.float32)
-        )
+        self.W1.data = self.W1.data - self.W1.grad * lr
+        self.W2.data = self.W2.data - self.W2.grad * lr
 
 
 @beartype.beartype
